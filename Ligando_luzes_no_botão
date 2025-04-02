@@ -1,0 +1,55 @@
+int contador = 0;
+int estadoButton = 0;
+int buttonPin = 7;
+int ledPin1 = 10;
+int ledPin2 = 9;
+int ledPin3 = 11;
+
+void setup(){
+  pinMode (ledPin1, OUTPUT);
+  pinMode (ledPin2, OUTPUT);
+  pinMode (ledPin3, OUTPUT);
+  pinMode (buttonPin, INPUT);
+}
+
+void loop() {
+  estadoButton = digitalRead(buttonPin);
+
+  if(estadoButton == 1) {
+  switch(contador) {
+
+    case 0:
+    contador+=1;
+    break;
+
+    case 1:
+    digitalWrite(ledPin1, HIGH);
+    delay(100);
+    contador +=1;
+    break;
+
+    case 2:
+    digitalWrite(ledPin2, HIGH);
+    delay(100);
+    contador +=1;
+    break;
+
+    case 3:
+    digitalWrite(ledPin3, HIGH);
+    delay(100);
+    contador +=1;
+    break;
+
+    case 4:
+    digitalWrite(ledPin1, LOW);
+    digitalWrite(ledPin2, LOW);
+    digitalWrite(ledPin3, LOW);
+    delay(100);
+    contador = 0;
+    break;
+
+    default:
+    break;
+  }
+  }
+}

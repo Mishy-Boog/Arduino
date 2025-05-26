@@ -1,0 +1,124 @@
+#include <Servo.h>
+
+const int pinoSom = A0;     // Pino analógico conectado ao AO do sensor
+const int pinoServo = 9;    // Pino de controle do servo
+const int limiar = 1022;    // Limiar de detecção de palma (ajustável, não mexa aqui)
+
+unsigned long ultimaPalma = 0;
+const unsigned long tempoLimite = 20000; // 20 segundos
+const unsigned long tempoBloqueio = 2000; // 2 segundos de bloqueio após retorno
+
+unsigned long tempoBloqueioInicio = 0;
+bool estadoServo = false;
+bool bloqueado = false;
+
+Servo meuServo;
+
+void setup() {
+  meuServo.attach(pinoServo);
+  meuServo.write(0); // posição inicial
+  Serial.begin(9600);
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  // Desbloqueia após 2 segundos se estiver bloqueado
+  if (bloqueado && (agora - tempoBloqueioInicio > tempoBloqueio)) {
+    bloqueado = false;
+    Serial.println("Sistema desbloqueado.");
+  }
+
+  int valorSom = analogRead(pinoSom);
+
+  // Se o som ultrapassou o limiar, passou o debounce e não está bloqueado
+  if (!bloqueado && valorSom > limiar && (agora - ultimaPalma > 700)) {
+    ultimaPalma = agora;
+    Serial.print("Som detectado: ");
+    Serial.println(valorSom);
+
+    estadoServo = !estadoServo;
+    meuServo.write(estadoServo ? 90 : 0);
+  }
+
+  // Se passou 20s sem som e o servo está aberto, fecha e inicia bloqueio
+  if (estadoServo && (agora - ultimaPalma > tempoLimite)) {
+    Serial.println("Tempo limite atingido. Voltando à posição inicial.");
+    estadoServo = false;
+    meuServo.write(0);
+
+    // Inicia bloqueio de 2 segundos
+    tempoBloqueioInicio = millis();
+    bloqueado = true;
+    Serial.println("Sistema bloqueado por 2 segundos.");
+  }
+}
+
+
+#include <Servo.h>
+
+#define trigPin 6
+#define echoPin 5
+#define distanciaLimite 20  // em centímetros
+
+Servo meuServo;
+bool emEspera = false;  // controla se o ciclo já está em andamento
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  meuServo.attach(9);
+  meuServo.write(0);  // posição inicial (fechado)
+  Serial.println("Sistema iniciado. Aguardando aproximação...");
+}
+
+void loop() {
+  long duracao;
+  int distancia;
+
+  // Envia pulso ultrassônico
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Calcula a distância
+  duracao = pulseIn(echoPin, HIGH);
+  distancia = duracao * 0.034 / 2;
+
+  Serial.print("Distancia: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+
+  // Se objeto está próximo e ainda não ativou o ciclo
+  if (distancia <= distanciaLimite && !emEspera) {
+    emEspera = true;
+    Serial.println("Objeto detectado! Abrindo servo...");
+    meuServo.write(90);  // abre
+
+    Serial.println("Pausa de 10 segundos iniciada.");
+    delay(10000);        // espera 10 segundos
+
+    Serial.println("Fechando servo...");
+    meuServo.write(0);   // fecha
+
+    // Espera o objeto se afastar antes de permitir outro ciclo
+    while (distancia <= distanciaLimite) {
+      digitalWrite(trigPin, LOW);
+      delayMicroseconds(2);
+      digitalWrite(trigPin, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(trigPin, LOW);
+      duracao = pulseIn(echoPin, HIGH);
+      distancia = duracao * 0.034 / 2;
+      delay(200);
+    }
+
+    Serial.println("Objeto afastado. Pronto para nova detecção.");
+    emEspera = false;
+  }
+
+  delay(200);  // pequena pausa para estabilidade
+}

@@ -1,0 +1,64 @@
+// Pinos do sensor ultrassônico
+const int trigPin = 12;
+const int echoPin = 13;
+
+// Pino do microfone (analógico)
+const int micPin = A0;
+
+// Pino do LED
+const int ledPin = 6;
+
+// Limiares
+const int limiteSom = 900;        // Ajuste conforme seu microfone e ambiente
+const int limiteDistancia = 5;   // Em cm
+
+// Variável para controlar tempo do LED ligado
+unsigned long tempoLedLigado = 0;
+const unsigned long tempoMantemLed = 2000; // 2 segundos em milissegundos
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+
+  Serial.begin(9600);
+}
+
+long medirDistanciaCM() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duracao = pulseIn(echoPin, HIGH, 30000); // timeout 30 ms
+  if (duracao == 0) return -1;
+
+  long distancia = duracao * 0.034 / 2;
+  return distancia;
+}
+
+void loop() {
+  int valorSom = analogRead(micPin);
+  long distancia = medirDistanciaCM();
+
+  Serial.print("Som: ");
+  Serial.print(valorSom);
+  Serial.print(" | Distância: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+
+  bool somDetectado = valorSom > limiteSom;
+  bool proximidadeDetectada = (distancia > 0 && distancia < limiteDistancia);
+
+  if (somDetectado || proximidadeDetectada) {
+    tempoLedLigado = millis();
+    digitalWrite(ledPin, HIGH);
+  } else {
+    if (millis() - tempoLedLigado >= tempoMantemLed) {
+      digitalWrite(ledPin, LOW);
+    }
+  }
+
+  delay(100);
+}

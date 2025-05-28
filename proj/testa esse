@@ -1,0 +1,107 @@
+#include <Servo.h> // Inclui a biblioteca para controlar o servo motor
+
+// --- Definições dos Pinos ---
+const int pinoSensorSom = A0;      // Pino analógico para o sensor de som
+const int pinoTrigger = 9;       // Pino do trigger do sensor ultrassônico
+const int pinoEcho = 10;         // Pino do echo do sensor ultrassônico
+const int pinoServo = 3;         // Pino PWM para o servo motor
+
+// --- Parâmetros de Funcionamento ---
+const int limiarSom = 500;           // Valor analógico para detectar uma palma (ajuste conforme necessário)
+                                   // Você pode verificar os valores lidos no Monitor Serial para calibrar
+const int distanciaMaximaCm = 20;   // Distância em cm para o sensor ultrassônico detectar proximidade
+const int anguloAberto = 90;         // Ângulo do servo quando a lixeira está aberta
+const int anguloFechado = 0;         // Ângulo do servo quando a lixeira está fechada
+const int tempoAbertoMs = 3000;      // Tempo em milissegundos que a lixeira permanece aberta
+
+// --- Variáveis Globais ---
+Servo meuServo;                    // Cria um objeto servo para controlar o motor
+long duracaoEco;                   // Variável para armazenar a duração do pulso do eco
+float distanciaCm;                 // Variável para armazenar a distância medida
+int valorSom;                      // Variável para armazenar o valor lido pelo sensor de som
+unsigned long tempoAbertura = 0;   // Variável para controlar o tempo que a lixeira está aberta
+bool lixeiraAberta = false;        // Flag para indicar se a lixeira está aberta ou fechada
+
+// --- Protótipos das Funções ---
+void abrirLixeira();
+void fecharLixeira();
+
+void setup() {
+  Serial.begin(9600); // Inicializa a comunicação serial para debugging
+
+  meuServo.attach(pinoServo);     // Associa o servo ao pino definido
+  pinMode(pinoTrigger, OUTPUT);   // Define o pino Trigger como saída
+  pinMode(pinoEcho, INPUT);       // Define o pino Echo como entrada
+  // O pino do sensor de som (A0) já é configurado como entrada por padrão ao usar analogRead()
+
+  meuServo.write(anguloFechado); // Garante que a lixeira comece fechada
+  Serial.println("Lixeira Automática Pronta!");
+  Serial.print("Limiar de som configurado para: ");
+  Serial.println(limiarSom);
+  Serial.print("Distância de ativação configurada para: ");
+  Serial.print(distanciaMaximaCm);
+  Serial.println(" cm");
+}
+
+void loop() {
+  // --- Leitura do Sensor de Som ---
+  valorSom = analogRead(pinoSensorSom);
+  // Serial.print("Valor do Som: "); // Descomente para calibrar o limiar de som
+  // Serial.println(valorSom);      // Descomente para calibrar o limiar de som
+
+  // --- Leitura do Sensor Ultrassônico ---
+  // Limpa o pino Trigger
+  digitalWrite(pinoTrigger, LOW);
+  delayMicroseconds(2);
+  // Define o pino Trigger como HIGH por 10 microsegundos
+  digitalWrite(pinoTrigger, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(pinoTrigger, LOW);
+  // Lê o pino Echo, retorna o tempo de viagem da onda sonora em microsegundos
+  duracaoEco = pulseIn(pinoEcho, HIGH);
+  // Calcula a distância
+  distanciaCm = duracaoEco * 0.034 / 2; // A velocidade do som é 340 m/s ou 0.034 cm/µs
+
+  // Serial.print("Distancia: "); // Descomente para verificar a leitura da distância
+  // Serial.print(distanciaCm);   // Descomente para verificar a leitura da distância
+  // Serial.println(" cm");       // Descomente para verificar a leitura da distância
+
+  // --- Lógica de Abertura ---
+  if (!lixeiraAberta) { // Só tenta abrir se já não estiver aberta
+    if (valorSom > limiarSom) {
+      Serial.println("Palma detectada!");
+      abrirLixeira();
+    } else if (distanciaCm > 0 && distanciaCm < distanciaMaximaCm) { // Verifica se a distância é válida e menor que o limite
+      Serial.print("Proximidade detectada a ");
+      Serial.print(distanciaCm);
+      Serial.println(" cm!");
+      abrirLixeira();
+    }
+  }
+
+  // --- Lógica de Fechamento Automático ---
+  if (lixeiraAberta && (millis() - tempoAbertura > tempoAbertoMs)) {
+    fecharLixeira();
+  }
+
+  delay(100); // Pequeno delay para estabilidade
+}
+
+// --- Função para Abrir a Lixeira ---
+void abrirLixeira() {
+  if (!lixeiraAberta) { // Garante que só execute se estiver fechada
+    Serial.println("Abrindo lixeira...");
+    meuServo.write(anguloAberto);
+    lixeiraAberta = true;
+    tempoAbertura = millis(); // Registra o momento da abertura
+  }
+}
+
+// --- Função para Fechar a Lixeira ---
+void fecharLixeira() {
+  if (lixeiraAberta) { // Garante que só execute se estiver aberta
+    Serial.println("Fechando lixeira...");
+    meuServo.write(anguloFechado);
+    lixeiraAberta = false;
+  }
+}

@@ -1,0 +1,82 @@
+#include <Servo.h>
+
+// Pinos
+const int soundPin = A0;      // Agora usando entrada analógica
+const int trig1 = 3;
+const int echo1 = 4;
+const int trig2 = 6;
+const int echo2 = 5;
+const int ledPin = 7;
+const int servoPin = 9;
+
+Servo meuServo;
+
+void setup() {
+  Serial.begin(9600);  // Iniciar comunicação serial
+  Serial.println("Arduino iniciado");
+
+  pinMode(trig1, OUTPUT);
+  pinMode(echo1, INPUT);
+  pinMode(trig2, OUTPUT);
+  pinMode(echo2, INPUT);
+  pinMode(ledPin, OUTPUT);
+  
+  meuServo.attach(servoPin);
+  meuServo.write(0); // Posição inicial do servo
+}
+
+void loop() {
+  // Leitura analógica do som
+  int som = analogRead(soundPin);
+  Serial.print("Valor de som: ");
+  Serial.println(som);
+
+  // Ajuste o limite com base no ambiente (~600 funciona para palmas)
+  if (som > 600) {
+    Serial.println("Som detectado!");
+    moverServo();
+  }
+
+  // Verifica sensor ultrassônico 1
+  long distancia1 = medirDistancia(trig1, echo1);
+  Serial.print("Distância 1: ");
+  Serial.println(distancia1);
+  if (distancia1 > 0 && distancia1 < 20) {
+    Serial.println("Sensor 1 ativado");
+    moverServo();
+  }
+
+  // Verifica sensor ultrassônico 2
+  long distancia2 = medirDistancia(trig2, echo2);
+  Serial.print("Distância 2: ");
+  Serial.println(distancia2);
+  if (distancia2 > 0 && distancia2 < 20) {
+    digitalWrite(ledPin, HIGH);
+    Serial.println("LED ON");
+  } else {
+    digitalWrite(ledPin, LOW);
+    Serial.println("LED OFF");
+  }
+
+  delay(200);
+}
+
+void moverServo() {
+  meuServo.write(90);      // Gira para 90 graus
+  delay(2000);             // Espera 2 segundos
+  meuServo.write(0);       // Volta para posição inicial
+}
+
+long medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duracao = pulseIn(echoPin, HIGH, 30000); // Timeout de 30ms
+  if (duracao == 0) return -1; // Sem leitura válida
+
+  long distancia = duracao * 0.034 / 2;
+  return distancia;
+}

@@ -1,0 +1,59 @@
+#include <Servo.h>
+
+const int pinoSom = A0;     // Pino analógico do sensor de som K-38
+const int pinoServo = 9;    // Pino do servo motor
+const int limiar = 920;     // Limiar para ativar o servo (ajuste conforme seu sensor)
+
+Servo meuServo;
+
+bool servoAberto = false;
+bool bloqueado = false;
+unsigned long tempoAbertura = 0;
+unsigned long tempoBloqueioInicio = 0;
+
+const unsigned long tempoParaFechar = 5000;   // 5 segundos aberto
+const unsigned long tempoBloqueio = 3000;     // 3 segundos de bloqueio após fechar
+
+void setup() {
+  Serial.begin(9600);
+  meuServo.attach(pinoServo);
+  meuServo.write(0);  // Servo na posição inicial (fechado)
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  int valorSom = analogRead(pinoSom);
+  Serial.print("Valor do som: ");
+  Serial.println(valorSom);
+
+  // Se estiver bloqueado, verifica se tempo acabou
+  if (bloqueado) {
+    if (agora - tempoBloqueioInicio >= tempoBloqueio) {
+      bloqueado = false;
+      Serial.println("Bloqueio terminado, sensor liberado.");
+    } else {
+      delay(100);
+      return;  // Enquanto bloqueado, não verifica som
+    }
+  }
+
+  // Abre servo se detectar som e estiver fechado
+  if (valorSom > limiar && !servoAberto) {
+    meuServo.write(90);
+    servoAberto = true;
+    tempoAbertura = agora;
+    Serial.println("Servo aberto!");
+  }
+
+  // Fecha servo após 5 segundos aberto
+  if (servoAberto && (agora - tempoAbertura >= tempoParaFechar)) {
+    meuServo.write(0);
+    servoAberto = false;
+    bloqueado = true;
+    tempoBloqueioInicio = agora;
+    Serial.println("Servo fechado, iniciando bloqueio de 3 segundos.");
+  }
+
+  delay(100);
+}

@@ -1,0 +1,23 @@
+#include <Servo.h>  // Biblioteca necessária para controlar o servo
+
+Servo meuServo;  // Cria um objeto do tipo Servo
+
+int posicao = 0;  // Variável para armazenar a posição do servo
+
+void setup() {
+  meuServo.attach(9);  // Define o pino onde o servo está conectado (no caso, pino 9)
+}
+
+void loop() {
+  // Vai de 0° a 180°:
+  for (posicao = 0; posicao <= 180; posicao++) {
+    meuServo.write(posicao);  // Envia a posição para o servo
+    delay(9);  // Espera 15ms para o servo alcançar a posição
+  }
+
+  // Vai de 180° a 0°:
+  for (posicao = 180; posicao >= 0; posicao--) {
+    meuServo.write(posicao);  // Envia a posição para o servo
+    delay(6);  // Espera 15ms para o servo alcançar a posição
+  }
+}

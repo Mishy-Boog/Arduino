@@ -1,0 +1,91 @@
+#include <Servo.h>
+
+// Pinos do sensor ultrassônico
+const int trigPin = 9;
+const int echoPin = 10;
+
+// Pino do microfone (analógico)
+const int micPin = A0;
+
+// Pino do servo motor
+const int servoPin = 13;
+
+// Limiares
+const int limiteSom = 900;        // Ajuste conforme seu microfone e ambiente
+const int limiteDistancia = 5;    // Em cm
+
+// Controle de tempo de ativação do servo
+unsigned long tempoServoAtivado = 0;
+unsigned long tempoDesligado = 0;
+const unsigned long tempoMantemServo = 2000; // 2 segundos
+const unsigned long tempoEspera = 3000;      // 3 segundos após desligar
+
+Servo servo;
+bool servoAtivo = false;
+bool pausaConcluida = false; // Variável para controlar a exibição da mensagem de pausa
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  servo.attach(servoPin);
+  servo.write(0); // Posição inicial
+
+  Serial.begin(9600);
+  Serial.println("Sistema iniciado");
+}
+
+long medirDistanciaCM() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duracao = pulseIn(echoPin, HIGH, 30000); // timeout 30 ms
+  if (duracao == 0) return -1;
+
+  long distancia = duracao * 0.034 / 2;
+  return distancia;
+}
+
+void loop() {
+  int valorSom = analogRead(micPin);
+  long distancia = medirDistanciaCM();
+
+  Serial.print("Som: ");
+  Serial.print(valorSom);
+  Serial.print(" | Distância: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+
+  bool somDetectado = valorSom > limiteSom;
+  bool proximidadeDetectada = (distancia > 0 && distancia < limiteDistancia);
+
+  if ((somDetectado || proximidadeDetectada) && !servoAtivo && (millis() - tempoDesligado >= tempoEspera)) {
+    if (somDetectado) Serial.println("Som detectado!");
+    if (proximidadeDetectada) Serial.println("Proximidade detectada!");
+    Serial.println("Ativando servo...");
+    
+    tempoServoAtivado = millis();
+    servo.write(90); // Mover o servo
+    servoAtivo = true;
+    pausaConcluida = false; // Reseta a variável de controle
+  } else if (!somDetectado && !proximidadeDetectada && servoAtivo && (millis() - tempoServoAtivado >= tempoMantemServo)) {
+    Serial.println("Desativando servo...");
+    
+    servo.write(0); // Retorna à posição inicial
+    servoAtivo = false;
+    tempoDesligado = millis();
+    Serial.println("Pausa de espera...");
+    pausaConcluida = false; // Reseta a variável de controle
+  }
+
+  // Verifica se a pausa de espera terminou e ainda não foi anunciada
+  if (millis() - tempoDesligado >= tempoEspera && !pausaConcluida) {
+    Serial.println("Pausa de espera concluída.");
+    pausaConcluida = true; // Marca que a pausa foi concluída
+  }
+
+  delay(100);
+}

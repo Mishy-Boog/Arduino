@@ -1,0 +1,41 @@
+const int amareloPin = 10;  
+const int azulPin = 11;     
+const int vermelhoPin = 9;  
+
+void setup() {
+  pinMode(amareloPin, OUTPUT);
+  pinMode(azulPin, OUTPUT);
+  pinMode(vermelhoPin, OUTPUT);
+}
+
+void fadeToColor(int rTarget, int yTarget, int bTarget, int steps, int delayTime) {
+  // Pega o valor atual dos pinos (armazena para fazer fade)
+  static int rCurrent = 0, yCurrent = 0, bCurrent = 0;
+
+  int rStep = (rTarget - rCurrent) / steps;
+  int yStep = (yTarget - yCurrent) / steps;
+  int bStep = (bTarget - bCurrent) / steps;
+
+  for (int i = 0; i <= steps; i++) {
+    rCurrent += rStep;
+    yCurrent += yStep;
+    bCurrent += bStep;
+
+    analogWrite(vermelhoPin, constrain(rCurrent, 0, 255));
+    analogWrite(amareloPin, constrain(yCurrent, 0, 255));
+    analogWrite(azulPin, constrain(bCurrent, 0, 255));
+
+    delay(delayTime);
+  }
+}
+
+void loop() {
+  fadeToColor(255, 255, 0, 50, 20);   // Amarelo forte (vermelho + amarelo)
+  fadeToColor(0, 255, 0, 50, 20);     // Amarelo só (amarelo forte, azul desligado)
+  fadeToColor(0, 0, 255, 50, 20);     // Azul forte
+  fadeToColor(255, 0, 255, 50, 20);   // Magenta (vermelho + azul)
+  fadeToColor(255, 100, 0, 50, 20);   // Laranja (vermelho + amarelo médio)
+  fadeToColor(128, 0, 128, 50, 20);   // Roxo (vermelho + azul médio)
+  fadeToColor(255, 255, 255, 50, 20); // Branco aproximado (todos no máximo)
+  fadeToColor(0, 0, 0, 50, 20);       // Apaga tudo
+}

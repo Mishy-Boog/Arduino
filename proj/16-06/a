@@ -1,0 +1,97 @@
+#include <Servo.h>
+
+// Sensor 1 (servo)
+const int trigPin1 = 2;
+const int echoPin1 = 3;
+Servo meuServo;
+
+// Sensor 2 (buzzer)
+const int trigPin2 = 4;
+const int echoPin2 = 5;
+const int buzzerPin = 7;
+
+// Limites
+const int DISTANCIA_SERVO_ATIVA = 7;  // distância para ativar servo
+const int DISTANCIA_BUZZER = 5;       // distância para ativar buzzer
+
+// Controle de estado do servo
+bool servoFechado = false;      // false = aberto (90°), true = fechado (0°)
+bool manoDetectadaAnterior = false;  // para detectar borda de detecção
+
+void setup() {
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  meuServo.attach(6);
+
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  meuServo.write(90);  // Começa aberto (agora 90°)
+  Serial.begin(9600);
+}
+
+void loop() {
+  long distancia1 = medirDistancia(trigPin1, echoPin1);
+  long distancia2 = medirDistancia(trigPin2, echoPin2);
+
+  bool manoDetectadaAgora = (distancia1 > 0 && distancia1 < DISTANCIA_SERVO_ATIVA);
+
+  // Detecta passagem da mão: borda de sinal (de falso para verdadeiro)
+  if (manoDetectadaAgora && !manoDetectadaAnterior) {
+    // Alterna o estado do servo
+    if (servoFechado) {
+      // Abre o servo (agora 90°)
+      moverServoSuave(0, 90);
+      servoFechado = false;
+      Serial.println("Servo aberto");
+    } else {
+      // Fecha o servo (agora 0°)
+      moverServoSuave(90, 0);
+      servoFechado = true;
+      Serial.println("Servo fechado");
+    }
+  }
+
+  manoDetectadaAnterior = manoDetectadaAgora;
+
+  // Buzzer só toca se servo aberto e sensor 2 detectar objeto perto
+  bool objetoSensor2 = (distancia2 > 0 && distancia2 < DISTANCIA_BUZZER);
+  if (!servoFechado && objetoSensor2) {
+    digitalWrite(buzzerPin, HIGH);
+    Serial.println("BUZZER: LIGADO");
+  } else {
+    digitalWrite(buzzerPin, LOW);
+    Serial.println("BUZZER: DESLIGADO");
+  }
+
+  delay(50);
+}
+
+// Função para mover servo suavemente de um ângulo inicial a um final
+void moverServoSuave(int angInicial, int angFinal) {
+  if (angInicial < angFinal) {
+    for (int ang = angInicial; ang <= angFinal; ang += 2) {
+      meuServo.write(ang);
+      delay(15);
+    }
+  } else {
+    for (int ang = angInicial; ang >= angFinal; ang -= 2) {
+      meuServo.write(ang);
+      delay(15);
+    }
+  }
+}
+
+// Função para medir distância
+long medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duracao = pulseIn(echoPin, HIGH, 30000);
+  if (duracao == 0) return 999;
+  return duracao * 0.034 / 2;
+}

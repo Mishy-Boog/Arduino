@@ -1,0 +1,117 @@
+const int redPin = 9;
+const int yellowPin = 10;
+const int bluePin = 11;
+
+const int soundSensorPin = 2; // D0 do sensor de som
+
+bool sistemaAtivo = false;
+unsigned long ultimaPalma = 0;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(yellowPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  pinMode(soundSensorPin, INPUT);
+  Serial.begin(9600);
+  Serial.println("Aguardando palma para ativar...");
+}
+
+// Detecta transição LOW → HIGH com debounce
+bool detectarPalma() {
+  static bool estadoAnterior = LOW;
+  bool estadoAtual = digitalRead(soundSensorPin);
+  bool palma = false;
+
+  if (estadoAtual == HIGH && estadoAnterior == LOW) {
+    unsigned long agora = millis();
+    if (agora - ultimaPalma > 300) { // Debounce
+      ultimaPalma = agora;
+      palma = true;
+    }
+  }
+
+  estadoAnterior = estadoAtual;
+  return palma;
+}
+
+// Efeito de transição suave de cor
+void fadeToColor(int rTarget, int yTarget, int bTarget, int steps, int delayTime) {
+  static int rCurrent = 0, yCurrent = 0, bCurrent = 0;
+
+  int rStep = (rTarget - rCurrent) / steps;
+  int yStep = (yTarget - yCurrent) / steps;
+  int bStep = (bTarget - bCurrent) / steps;
+
+  for (int i = 0; i <= steps; i++) {
+    // Permite detectar palma durante o efeito
+    if (detectarPalma()) {
+      sistemaAtivo = !sistemaAtivo;
+
+      if (sistemaAtivo) {
+        Serial.println("PALMA DETECTADA DURANTE FADE → Sistema ATIVADO");
+      } else {
+        Serial.println("PALMA DETECTADA DURANTE FADE → Sistema DESATIVADO");
+        desligarLEDs();
+        return; // Sai imediatamente do efeito
+      }
+
+      delay(300); // Debounce extra
+    }
+
+    if (!sistemaAtivo) return;
+
+    rCurrent += rStep;
+    yCurrent += yStep;
+    bCurrent += bStep;
+
+    analogWrite(redPin, constrain(rCurrent, 0, 255));
+    analogWrite(yellowPin, constrain(yCurrent, 0, 255));
+    analogWrite(bluePin, constrain(bCurrent, 0, 255));
+
+    delay(delayTime);
+  }
+}
+
+// Apaga todos os LEDs
+void desligarLEDs() {
+  analogWrite(redPin, 0);
+  analogWrite(yellowPin, 0);
+  analogWrite(bluePin, 0);
+}
+
+void loop() {
+  // Debug: mostra quando o sensor detecta som
+  int leitura = digitalRead(soundSensorPin);
+  if (leitura == HIGH) {
+    Serial.println("Sensor ativado (pico de som)");
+    delay(100); // Pequeno delay para evitar spam
+  }
+
+  // Detecta palma fora do fade
+  if (detectarPalma()) {
+    sistemaAtivo = !sistemaAtivo;
+
+    if (sistemaAtivo) {
+      Serial.println("PALMA DETECTADA → Sistema ATIVADO");
+    } else {
+      Serial.println("PALMA DETECTADA → Sistema DESATIVADO");
+      desligarLEDs();
+    }
+
+    delay(300); // Debounce
+  }
+
+  // Executa efeitos se estiver ativo
+  if (sistemaAtivo) {
+    fadeToColor(255, 0, 0, 40, 20);     // Vermelho
+    fadeToColor(0, 255, 0, 40, 20);     // Verde
+    fadeToColor(0, 0, 255, 40, 20);     // Azul
+    fadeToColor(255, 128, 0, 40, 20);   // Laranja
+    fadeToColor(255, 100, 180, 40, 20); // Rosa
+    fadeToColor(128, 0, 200, 40, 20);   // Roxo
+    fadeToColor(0, 100, 255, 40, 20);   // Azul bebê
+    fadeToColor(255, 255, 255, 40, 20); // Branco
+    fadeToColor(30, 30, 30, 40, 20);    // Cinza escuro
+    fadeToColor(0, 0, 0, 40, 20);       // Desliga no fim
+  }
+}

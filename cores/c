@@ -1,0 +1,32 @@
+const int redPin = 9;
+const int yellowPin = 10;
+const int bluePin = 11;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(yellowPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+}
+
+void loop() {
+  for (int i = 0; i < 256; i++) {
+    analogWrite(redPin, 255 - i);    // Vermelho diminuindo
+    analogWrite(yellowPin, i);       // Amarelo aumentando
+    analogWrite(bluePin, 0);         // Azul apagado
+    delay(10);
+  }
+
+  for (int i = 0; i < 256; i++) {
+    analogWrite(redPin, 0);
+    analogWrite(yellowPin, 255 - i);
+    analogWrite(bluePin, i);         // Azul subindo, amarelo caindo
+    delay(10);
+  }
+
+  for (int i = 0; i < 256; i++) {
+    analogWrite(redPin, i);          // Vermelho sobe
+    analogWrite(yellowPin, 0);
+    analogWrite(bluePin, 255 - i);   // Azul desce
+    delay(10);
+  }
+}

@@ -1,0 +1,43 @@
+const int redPin = 9;
+const int yellowPin = 10;
+const int bluePin = 11;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(yellowPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+}
+
+// Função de transição suave
+void fadeToColor(int rTarget, int yTarget, int bTarget, int steps, int delayTime) {
+  static int rCurrent = 0, yCurrent = 0, bCurrent = 0;
+
+  int rStep = (rTarget - rCurrent) / steps;
+  int yStep = (yTarget - yCurrent) / steps;
+  int bStep = (bTarget - bCurrent) / steps;
+
+  for (int i = 0; i <= steps; i++) {
+    rCurrent += rStep;
+    yCurrent += yStep;
+    bCurrent += bStep;
+
+    analogWrite(redPin, constrain(rCurrent, 0, 255));
+    analogWrite(yellowPin, constrain(yCurrent, 0, 255));
+    analogWrite(bluePin, constrain(bCurrent, 0, 255));
+
+    delay(delayTime);
+  }
+}
+
+void loop() {
+  fadeToColor(255, 0, 0, 40, 20);     // Vermelho
+  fadeToColor(0, 255, 0, 40, 20);     // Amarelo
+  fadeToColor(0, 0, 255, 40, 20);     // Azul
+  fadeToColor(255, 128, 0, 40, 20);   // Laranja
+  fadeToColor(255, 100, 180, 40, 20); // Rosa claro
+  fadeToColor(128, 0, 200, 40, 20);   // Roxo suave
+  fadeToColor(0, 100, 255, 40, 20);   // Azul bebê
+  fadeToColor(255, 255, 255, 40, 20); // Branco aproximado
+  fadeToColor(30, 30, 30, 40, 20);    // Cor apagada (cinza escuro)
+  fadeToColor(0, 0, 0, 40, 20);       // Tudo desligado
+}

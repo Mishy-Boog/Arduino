@@ -1,0 +1,48 @@
+// Pinos dos LEDs
+const int amareloPin = 10; // PWM
+const int vermelhoPin = 9;
+const int azulPin = 11;    // PWM
+
+void setup() {
+  pinMode(amareloPin, OUTPUT);
+  pinMode(vermelhoPin, OUTPUT);
+  pinMode(azulPin, OUTPUT);
+}
+
+void loop() {
+  // Amarelo forte
+  analogWrite(amareloPin, 255); // brilho total
+  digitalWrite(vermelhoPin, LOW);
+  analogWrite(azulPin, 0);
+  delay(1000);
+
+  // Azul forte
+  analogWrite(amareloPin, 0);
+  digitalWrite(vermelhoPin, LOW);
+  analogWrite(azulPin, 255);
+  delay(1000);
+
+  // Vermelho forte
+  analogWrite(amareloPin, 0);
+  digitalWrite(vermelhoPin, HIGH);
+  analogWrite(azulPin, 0);
+  delay(1000);
+
+  // Roxo (vermelho + azul)
+  analogWrite(amareloPin, 0);
+  digitalWrite(vermelhoPin, HIGH);
+  analogWrite(azulPin, 128);
+  delay(1000);
+
+  // Branco aproximado (todas as cores)
+  analogWrite(amareloPin, 255);
+  digitalWrite(vermelhoPin, HIGH);
+  analogWrite(azulPin, 128);
+  delay(1000);
+
+  // Desliga tudo
+  analogWrite(amareloPin, 0);
+  digitalWrite(vermelhoPin, LOW);
+  analogWrite(azulPin, 0);
+  delay(1000);
+}

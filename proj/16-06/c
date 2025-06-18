@@ -1,0 +1,33 @@
+const int sensorSom = 2;     // Pino do sensor de som
+const int rele1 = 8;         // Pino do relé
+
+bool estadoRele = false;     // Estado atual do relé
+bool somAnterior = LOW;
+unsigned long ultimaMudanca = 0;
+
+const unsigned long tempoBloqueio = 1000; // 1 segundo de bloqueio entre palmas
+
+void setup() {
+  pinMode(sensorSom, INPUT);
+  pinMode(rele1, OUTPUT);
+  digitalWrite(rele1, LOW);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int somAtual = digitalRead(sensorSom);
+  unsigned long agora = millis();
+
+  // Só reage se passou tempo suficiente desde a última mudança
+  if (somAtual == HIGH && somAnterior == LOW && (agora - ultimaMudanca > tempoBloqueio)) {
+    estadoRele = !estadoRele;
+    digitalWrite(rele1, estadoRele ? HIGH : LOW);
+
+    Serial.print("Palma detectada. Relé agora está: ");
+    Serial.println(estadoRele ? "LIGADO" : "DESLIGADO");
+
+    ultimaMudanca = agora;
+  }
+
+  somAnterior = somAtual;
+}
